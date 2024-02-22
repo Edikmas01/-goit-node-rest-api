@@ -4,8 +4,8 @@ const contactsServices = require("../services/contactsServices");
 
 const getAllContacts = async (req, res, next) => {
   try {
-    const contact = await contactsServices.listContacts();
-    res.status(200).json(contact);
+    const contacts = await contactsServices.getAll();
+    res.status(200).json(contacts);
   } catch (error) {
     next(error);
   }
@@ -67,7 +67,9 @@ const update = async (req, res, next) => {
   }
 
   try {
-    const updatedContact = await contactsServices.updateContact(id, req.body);
+    await contactsServices.updateContact(id, req.body);
+
+    const updatedContact = await contactsServices.getContactById(id);
 
     res.status(200).json(updatedContact);
   } catch (error) {

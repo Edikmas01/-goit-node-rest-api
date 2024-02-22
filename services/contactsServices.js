@@ -1,8 +1,8 @@
 const fs = require("fs").promises;
 const path = require("path");
 const { v4: uuid } = require("uuid");
-const { getAllContacts } = require("../controllers/contactsControllers");
 const contactsPath = path.join(__dirname, "..", "db", "contacts.json");
+const Contact = require("../schemas/contactsSchemas");
 
 async function writeFile(data) {
   const string = JSON.stringify(data);
@@ -16,64 +16,43 @@ async function writeFile(data) {
   });
 }
 
-async function listContacts() {
-  const contacts = await fs.readFile(contactsPath, "utf8", (err, data) => {
-    if (err) {
-      throw err;
-    }
+async function getAll() {
+  const contacts = await Contact.find();
 
-    return data;
-  });
-
-  return JSON.parse(contacts);
+  return contacts;
 }
 
 async function getContactById(contactId) {
-  const contacts = await listContacts();
-  const contact = contacts.find((c) => c.id === contactId);
+  const contact = await Contact.findById(contactId);
+
   return contact;
 }
 
 async function addContact({ name, email, phone }) {
-  const contacts = await listContacts();
+  const newContact = new Contact({ name, email, phone });
+  newContact.save();
 
-  const newContacts = {
-    id: uuid(),
-    name,
-    email,
-    phone,
-  };
-
-  contacts.push(newContacts);
-
-  await writeFile(contacts);
-
-  return newContacts;
+  return newContact;
 }
 
 async function updateContact(id, data) {
-  const contacts = await listContacts();
+  try {
+    const updatedContact = await Contact.findByIdAndUpdate(id, data);
 
-  const updatedContacts = contacts.map((c) => {
-    if (c.id === id) {
-      Object.assign(c, data);
-    }
+    await updatedContact.save();
 
-    return c;
-  });
-
-  await writeFile(updatedContacts);
-
-  const updatedContact = await getContactById(id);
-  return updatedContact;
+    
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 async function removeContact(contactId) {
-  const contacts = await listContacts();
-
-  const removeContact = contacts.filter((c) => c.id !== contactId);
-
-  await writeFile(removeContact);
+  try {
+    await Contact.findByIdAndDelete(contactId);
+  } catch (error) {
+    throw new Error(error.message);
+  }
 }
 
 function validateData({ name, email, phone }) {
@@ -115,7 +94,7 @@ function validateData({ name, email, phone }) {
 }
 
 module.exports = {
-  listContacts,
+  getAll,
   getContactById,
   addContact,
   updateContact,
